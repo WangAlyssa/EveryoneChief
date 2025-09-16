@@ -11,7 +11,7 @@ The main idea is simple: each meal has one or more chiefs who cook, and the rest
 
 ## Goals
 This project is meant to be both useful for my family and a way for me to practice building a real-world web application.  
-I plan to start with a basic structure and add features step by step.  
+We plan to start with a basic structure and add features step by step.  
 
 ## Next Steps
 - [ ] Set up project structure and basic UI  
