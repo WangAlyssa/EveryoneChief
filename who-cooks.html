@@ -1,94 +1,110 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Everyone Chief · Cook Dashboard</title>
-  <style>
-    :root{--bg:#fafafa;--card:#fff;--line:#eee;--brand:#5b7cfa;--muted:#666}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center}
-    header a{color:var(--brand);text-decoration:none;font-weight:600}
-    .wrap{padding:16px;display:grid;gap:16px}
-    .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;display:grid;grid-template-columns:120px 1fr;gap:12px;padding:12px}
-    .card img{width:120px;height:90px;object-fit:cover;border-radius:8px;background:#ddd}
-    .muted{color:var(--muted);font-size:12px}
-    .toolbar{display:flex;gap:8px;align-items:center}
-    button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-    .done{background:#ecfff0;border-color:#c8f0d1}
-    .empty{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:#666}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Everyone Chief · Cook Dashboard</title>
+<style>
+:root{--bg:#f9fafb;--card:#fff;--text:#222;--muted:#666;--brand:#5b7cfa;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+a{color:var(--brand);text-decoration:none}
+h2{margin:12px 0}
+.wrap{padding:16px;max-width:900px;margin:auto}
+.summary{margin:10px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:14px}
+.grid{display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;gap:14px;align-items:center;padding:10px;transition:.2s}
+.card.done{background:#ecfdf5;border-color:#34d399}
+.card img{width:120px;height:90px;object-fit:cover;background:#ddd;border-radius:8px}
+.card h3{margin:0 0 4px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.empty{color:var(--muted);text-align:center;padding:40px}
+.toolbar{margin:10px 0;display:flex;gap:8px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 <header>
   <strong>Cook Dashboard</strong>
-  <span id="date" style="margin-left:8px;color:#555"></span>
-  <div style="margin-left:auto;display:flex;gap:14px">
-    <a href="index.html">Home</a>
-    <a href="what-to-cook.html">What to Cook</a>
-  </div>
+  <a href="index.html">Home</a>
+  <a href="what-to-cook.html">What to Cook</a>
 </header>
 
 <div class="wrap">
+  <div class="summary" id="summary"></div>
   <div class="toolbar">
     <button id="markAll">Mark all done</button>
     <button id="clearDone">Clear done</button>
     <button id="clearAll">Clear today</button>
-    <span class="muted" id="count"></span>
   </div>
-  <div id="list" class="list"></div>
-  <div id="empty" class="empty" style="display:none">No dishes for today yet.</div>
+  <div id="list" class="grid"></div>
+  <div id="empty" class="empty" style="display:none">No dishes in today’s menu yet.</div>
 </div>
 
 <script>
-const LS_KEYS = { DISHES:'ec_dishes', TODAY_PREFIX:'ec_today_' };
-const todayKey = ()=> LS_KEYS.TODAY_PREFIX + new Date().toISOString().slice(0,10);
-document.getElementById('date').textContent = '(' + todayKey().slice(-10) + ')';
+const LS={DISHES:'ec_dishes', TODAY_PREFIX:'ec_today_'};
+const todayKey=()=>LS.TODAY_PREFIX+new Date().toISOString().slice(0,10);
+const PLACEHOLDER='data:image/svg+xml;base64,'+
+ btoa('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="Arial" font-size="20">No Image</text></svg>');
 
-function loadDishes(){ const raw=localStorage.getItem(LS_KEYS.DISHES); return raw? JSON.parse(raw) : []; }
-function loadToday(){ const raw=localStorage.getItem(todayKey()); return raw? JSON.parse(raw):[]; }
-function saveToday(arr){ localStorage.setItem(todayKey(), JSON.stringify(arr)); }
+function loadDishes(){const raw=localStorage.getItem(LS.DISHES);return raw?JSON.parse(raw):[];}
+function loadToday(){const raw=localStorage.getItem(todayKey());return raw?JSON.parse(raw):[];}
+function saveToday(arr){localStorage.setItem(todayKey(),JSON.stringify(arr));}
 
-const list = document.getElementById('list');
-const empty = document.getElementById('empty');
-const count = document.getElementById('count');
+const list=document.getElementById('list');
+const empty=document.getElementById('empty');
+const summary=document.getElementById('summary');
 
 function render(){
-  const dishes = loadDishes();
-  const today = loadToday();
+  const dishes=loadDishes();
+  let arr=loadToday();
   list.innerHTML='';
-  if(today.length===0){ empty.style.display='block'; count.textContent='0 items'; return; }
+  if(!arr.length){empty.style.display='block';summary.textContent='';return;}
   empty.style.display='none';
-  const total = today.reduce((s,x)=>s+x.qty,0);
-  count.textContent = `${total} item${total!==1?'s':''} · ${today.filter(x=>x.done).length} done`;
 
-  today.forEach((t,i)=>{
-    const d = dishes.find(x=>x.id===t.id);
-    const card = document.createElement('div'); card.className='card' + (t.done?' done':'');
-    const img = document.createElement('img'); img.src = d?.image || ''; img.alt = d?.name || 'Dish';
-    const right = document.createElement('div');
-    const h3 = document.createElement('h3'); h3.textContent = d?.name || '(Unknown dish)';
-    const meta = document.createElement('div'); meta.className='muted'; meta.textContent = `Qty: ${t.qty}`;
-    const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.marginTop='6px';
-    const minus = btn('−', ()=>{ if(t.qty>1){ t.qty--; } else { today.splice(i,1); } saveToday(today); render(); });
-    const plus  = btn('+', ()=>{ t.qty++; saveToday(today); render(); });
-    const done  = btn(t.done?'Undo':'Mark done', ()=>{ t.done=!t.done; saveToday(today); render(); });
-    const remove= btn('Remove', ()=>{ today.splice(i,1); saveToday(today); render(); });
-    row.append(minus,plus,done,remove);
-    right.append(h3,meta,row);
-    card.append(img,right);
+  let doneCount=0,total=0;
+
+  arr.forEach(item=>{
+    const d=dishes.find(x=>x.id===item.id);
+    if(!d) return;
+    total+=item.qty;
+    if(item.done) doneCount+=item.qty;
+
+    const card=document.createElement('div');
+    card.className='card'+(item.done?' done':'');
+    const img=document.createElement('img');
+    img.src=d.image||PLACEHOLDER;img.alt=d.name;img.onerror=()=>{img.src=PLACEHOLDER};
+    const info=document.createElement('div');info.style.flex='1';
+    const h3=document.createElement('h3');h3.textContent=d.name;
+    const qty=document.createElement('div');qty.textContent='Qty: '+item.qty;
+    const actions=document.createElement('div');actions.className='actions';
+
+    const plus=document.createElement('button');plus.textContent='＋';plus.onclick=()=>{item.qty++;saveToday(arr);render();};
+    const minus=document.createElement('button');minus.textContent='－';minus.onclick=()=>{if(item.qty>1){item.qty--;saveToday(arr);render();}};
+    const done=document.createElement('button');done.textContent=item.done?'Undo':'Done';done.onclick=()=>{item.done=!item.done;saveToday(arr);render();};
+    const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{arr=arr.filter(x=>x.id!==item.id);saveToday(arr);render();};
+
+    actions.append(plus,minus,done,remove);
+    info.append(h3,qty,actions);
+    card.append(img,info);
     list.append(card);
   });
-}
-function btn(text, on){ const b=document.createElement('button'); b.textContent=text; b.onclick=on; return b; }
 
-document.getElementById('markAll').onclick = ()=>{ const t=loadToday(); t.forEach(x=>x.done=true); saveToday(t); render(); };
-document.getElementById('clearDone').onclick = ()=>{ const t=loadToday().filter(x=>!x.done); saveToday(t); render(); };
-document.getElementById('clearAll').onclick = ()=>{ if(confirm('Clear all items for today?')){ localStorage.removeItem(todayKey()); render(); } };
+  summary.textContent=`Total: ${total} items · Completed: ${doneCount}`;
+}
+
+document.getElementById('markAll').onclick=()=>{
+  const arr=loadToday();arr.forEach(x=>x.done=true);saveToday(arr);render();
+};
+document.getElementById('clearDone').onclick=()=>{
+  const arr=loadToday().filter(x=>!x.done);saveToday(arr);render();
+};
+document.getElementById('clearAll').onclick=()=>{
+  if(confirm('Clear today’s menu?')){saveToday([]);render();}
+};
 
 render();
 </script>
 </body>
 </html>
-
