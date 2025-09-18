@@ -1,1 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Everyone Chief · Cook Dashboard</title>
+  <style>
+    :root{--bg:#fafafa;--card:#fff;--line:#eee;--brand:#5b7cfa;--muted:#666}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center}
+    header a{color:var(--brand);text-decoration:none;font-weight:600}
+    .wrap{padding:16px;display:grid;gap:16px}
+    .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;display:grid;grid-template-columns:120px 1fr;gap:12px;padding:12px}
+    .card img{width:120px;height:90px;object-fit:cover;border-radius:8px;background:#ddd}
+    .muted{color:var(--muted);font-size:12px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .done{background:#ecfff0;border-color:#c8f0d1}
+    .empty{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:#666}
+  </style>
+</head>
+<body>
+<header>
+  <strong>Cook Dashboard</strong>
+  <span id="date" style="margin-left:8px;color:#555"></span>
+  <div style="margin-left:auto;display:flex;gap:14px">
+    <a href="index.html">Home</a>
+    <a href="what-to-cook.html">What to Cook</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <button id="markAll">Mark all done</button>
+    <button id="clearDone">Clear done</button>
+    <button id="clearAll">Clear today</button>
+    <span class="muted" id="count"></span>
+  </div>
+  <div id="list" class="list"></div>
+  <div id="empty" class="empty" style="display:none">No dishes for today yet.</div>
+</div>
+
+<script>
+const LS_KEYS = { DISHES:'ec_dishes', TODAY_PREFIX:'ec_today_' };
+const todayKey = ()=> LS_KEYS.TODAY_PREFIX + new Date().toISOString().slice(0,10);
+document.getElementById('date').textContent = '(' + todayKey().slice(-10) + ')';
+
+function loadDishes(){ const raw=localStorage.getItem(LS_KEYS.DISHES); return raw? JSON.parse(raw) : []; }
+function loadToday(){ const raw=localStorage.getItem(todayKey()); return raw? JSON.parse(raw):[]; }
+function saveToday(arr){ localStorage.setItem(todayKey(), JSON.stringify(arr)); }
+
+const list = document.getElementById('list');
+const empty = document.getElementById('empty');
+const count = document.getElementById('count');
+
+function render(){
+  const dishes = loadDishes();
+  const today = loadToday();
+  list.innerHTML='';
+  if(today.length===0){ empty.style.display='block'; count.textContent='0 items'; return; }
+  empty.style.display='none';
+  const total = today.reduce((s,x)=>s+x.qty,0);
+  count.textContent = `${total} item${total!==1?'s':''} · ${today.filter(x=>x.done).length} done`;
+
+  today.forEach((t,i)=>{
+    const d = dishes.find(x=>x.id===t.id);
+    const card = document.createElement('div'); card.className='card' + (t.done?' done':'');
+    const img = document.createElement('img'); img.src = d?.image || ''; img.alt = d?.name || 'Dish';
+    const right = document.createElement('div');
+    const h3 = document.createElement('h3'); h3.textContent = d?.name || '(Unknown dish)';
+    const meta = document.createElement('div'); meta.className='muted'; meta.textContent = `Qty: ${t.qty}`;
+    const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.marginTop='6px';
+    const minus = btn('−', ()=>{ if(t.qty>1){ t.qty--; } else { today.splice(i,1); } saveToday(today); render(); });
+    const plus  = btn('+', ()=>{ t.qty++; saveToday(today); render(); });
+    const done  = btn(t.done?'Undo':'Mark done', ()=>{ t.done=!t.done; saveToday(today); render(); });
+    const remove= btn('Remove', ()=>{ today.splice(i,1); saveToday(today); render(); });
+    row.append(minus,plus,done,remove);
+    right.append(h3,meta,row);
+    card.append(img,right);
+    list.append(card);
+  });
+}
+function btn(text, on){ const b=document.createElement('button'); b.textContent=text; b.onclick=on; return b; }
+
+document.getElementById('markAll').onclick = ()=>{ const t=loadToday(); t.forEach(x=>x.done=true); saveToday(t); render(); };
+document.getElementById('clearDone').onclick = ()=>{ const t=loadToday().filter(x=>!x.done); saveToday(t); render(); };
+document.getElementById('clearAll').onclick = ()=>{ if(confirm('Clear all items for today?')){ localStorage.removeItem(todayKey()); render(); } };
+
+render();
+</script>
+</body>
+</html>
 
